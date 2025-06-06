@@ -3,7 +3,9 @@ import logging
 import os
 import tempfile
 import urllib
-import urlparse
+from urllib.parse import urljoin, urlparse
+
+
 import requests
 from geosolver import settings
 from geosolver.database.states import Question
@@ -27,8 +29,8 @@ class GeoserverInterface(object):
         else:
             param = "+".join(str(x) for x in args)
         sub_url = "/questions/download/%s" % param
-        request_url = urlparse.urljoin(self.server_url, sub_url)
-        print "accessing: %s" % request_url
+        request_url = urljoin(self.server_url, sub_url)
+        print("accessing: %s" % request_url)
         r = requests.get(request_url)
         data = json.loads(r.text, object_hook=_decode_dict)
         questions = {}
@@ -38,7 +40,7 @@ class GeoserverInterface(object):
             else:
                 diagram_url = pair['diagram_url']
                 temp_dir = tempfile.mkdtemp()
-                temp_name = os.path.basename(urlparse.urlparse(diagram_url).path)
+                temp_name = os.path.basename(urlparse(diagram_url).path)
                 temp_filepath = os.path.join(temp_dir, temp_name)
                 urllib.urlretrieve(diagram_url, temp_filepath)
             choice_words = {int(number): {int(index): word for index, word in words.iteritems()} for number, words in pair['choice_words'].iteritems()}
@@ -57,8 +59,8 @@ class GeoserverInterface(object):
         else:
             key = "+".join(str(x) for x in args)
         suburl = "/labels/download/%s" % str(key)
-        request_url = urlparse.urljoin(self.server_url, suburl)
-        print "accessing: %s" % request_url
+        request_url = urljoin(self.server_url, suburl)
+        print("accessing: %s" % request_url)
         r = requests.get(request_url)
         data = json.loads(r.text, object_hook=_decode_dict)
         labels = {}
@@ -74,8 +76,8 @@ class GeoserverInterface(object):
         else:
             param = "+".join(str(x) for x in args)
         suburl = "/semantics/download/%s" % param
-        request_url = urlparse.urljoin(self.server_url, suburl)
-        print "accessing: %s" % request_url
+        request_url = urljoin(self.server_url, suburl)
+        print("accessing: %s" % request_url)
         r = requests.get(request_url)
         data = json.loads(r.text, object_hook=_decode_dict)
         processed = {int(pk): {int(idx): {int(num): text
@@ -93,7 +95,7 @@ class GeoserverInterface(object):
         :return:
         """
         suburl = "/questions/upload/"
-        request_url = urlparse.urljoin(self.server_url, suburl)
+        request_url = urljoin(self.server_url, suburl)
         if len(choices) > 0:
             has_choices = True
         else:
@@ -128,7 +130,7 @@ class GeoserverInterface(object):
         Upload choice
         '''
         suburl = "/questions/upload/choice"
-        request_url = urlparse.urljoin(self.server_url, suburl)
+        request_url = urljoin(self.server_url, suburl)
 
         # Get request
         r = requests.get(request_url)

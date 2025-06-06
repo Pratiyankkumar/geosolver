@@ -463,7 +463,7 @@ def Pi():
 def Degree():
     return np.pi/180
 
-def True(tv):
+def evaluate_true(tv):
     return tv
 
 def IsCircle(circle):

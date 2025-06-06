@@ -71,7 +71,7 @@ class PrimitiveParse(object):
         self.image_segment_parse = image_segment_parse
         self.lines = lines
         self.circles = circles
-        self.primitives = dict(lines.items() + circles.items())
+        self.primitives = {**lines, **circles}
 
     def display_primitives(self, block=True, **kwargs):
         self.image_segment_parse.display_instances(self.primitives.values(), block=block, **kwargs)
@@ -104,7 +104,7 @@ class CoreParse(object):
     def get_image_points(self, **kwargs):
         image = self.image_segment_parse.get_colored_original_image()
         offset = self.image_segment_parse.diagram_image_segment.offset
-        for key, point in self.intersection_points.iteritems():
+        for key, point in self.intersection_points.items():
             label = Label("%d" % key, point)
             draw_label(image, label, offset=offset, **kwargs)
             draw_point(image, point, offset=offset, **kwargs)

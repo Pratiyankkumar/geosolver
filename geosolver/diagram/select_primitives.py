@@ -39,23 +39,23 @@ def select_primitives(primitive_parse):
     return new_primitive_parse
 
 def _get_primitive_parse(segment_parse, primitives):
-    lines = dict(pair for pair in primitives.iteritems()
+    lines = dict(pair for pair in primitives.items()
                  if isinstance(pair[1], instantiators['line']))
-    circles = dict(pair for pair in primitives.iteritems()
+    circles = dict(pair for pair in primitives.items()
                    if isinstance(pair[1], instantiators['circle']))
     return PrimitiveParse(segment_parse, lines, circles)
 
 
 def _get_next_primitive_key(selected_primitives, remaining_primitives, pixels_dict):
     return max(remaining_primitives.items(),
-               key=lambda p: _evaluate_reward(dict(selected_primitives.items()+[p]), pixels_dict))[0]
+               key=lambda p: _evaluate_reward({**selected_primitives, p[0]: p[1]}, pixels_dict))[0]
 
 
 def _get_pixels_dict(primitive_parse, line_eps, circle_eps):
     primitives = primitive_parse.primitives
     pixels = primitive_parse.image_segment_parse.diagram_image_segment.pixels
     pixels_dict = {'all': pixels}
-    for key, primitive in primitives.iteritems():
+    for key, primitive in primitives.items():
         if isinstance(primitive, instantiators['line']):
             eps = line_eps
             curr_pixels = _get_pixels_near_line(pixels, primitive, eps)
@@ -176,7 +176,7 @@ def _length_sum(partial_primitives):
 
 def _coherence(partial_primitives):
     scores = []
-    for idx, primitive in partial_primitives.iteritems():
+    for idx, primitive in partial_primitives.items():
         if isinstance(primitive, instantiators['line']):
             score = _line_coherence(partial_primitives, idx)
         elif isinstance(primitive, instantiators['circle']):

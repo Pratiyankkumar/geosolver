@@ -24,7 +24,7 @@ def parse_core(primitive_parse):
         assignment[id_] = intersections[idx]
     circles = _get_circles(primitive_parse, intersections)
     radius_variables = {}
-    for point_idx, d in circles.iteritems():
+    for point_idx, d in circles.items():
         radius_variables[point_idx] = {}
         for radius_idx in d.keys():
             id_ = "radius_%d_%d" % (point_idx, radius_idx)
@@ -114,7 +114,7 @@ def _get_circles(primitive_parse, intersection_points):
     """
     eps = params.CIRCLE_EPS
     circle_dict = {}
-    for point_key, point in intersection_points.iteritems():
+    for point_key, point in intersection_points.items():
         d = {}
         radius_key = 0
         for circle in primitive_parse.circles.values():

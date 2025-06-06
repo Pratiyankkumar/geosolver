@@ -17,7 +17,7 @@ def parse_graph(core_parse):
     circle_dict = _get_circle_dict(core_parse)
     line_graph = _get_line_graph(core_parse)
     arc_graphs = {}
-    for center_key, d in circle_dict.iteritems():
+    for center_key, d in circle_dict.items():
         for radius_key in d:
             circle = circle_dict[center_key][radius_key]['instance']
             circle_variable = circle_dict[center_key][radius_key]['variable']
@@ -42,9 +42,9 @@ def _get_circle_dict(core_parse):
     circle_dict = {}
 
 
-    for point_key, dd in core_parse.circles.iteritems():
+    for point_key, dd in core_parse.circles.items():
         d = {}
-        for radius_key, circle in dd.iteritems():
+        for radius_key, circle in dd.items():
             points = {}
             for key in core_parse.intersection_points:
                 point = core_parse.intersection_points[key]

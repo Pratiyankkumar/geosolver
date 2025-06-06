@@ -49,7 +49,7 @@ def _get_diagram_and_label_segments(image_segments, min_area, min_height, min_wi
     diagram_segment = max(image_segments.values(), key=lambda s: s.area)
 
     label_segments = {}
-    for key, image_segment in image_segments.iteritems():
+    for key, image_segment in image_segments.items():
         if key == diagram_segment.key:
             continue
         a = image_segment.area >= min_area

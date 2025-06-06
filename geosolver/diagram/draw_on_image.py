@@ -9,7 +9,7 @@ __author__ = 'minjoon'
 
 
 def draw_instance(image, instance, **kwargs):
-    for key, instantiator in instantiators.iteritems():
+    for key, instantiator in instantiators.items():
         if isinstance(instance, instantiator):
             if key in ['triangle', 'quad']:
                 draw_polygon(image, instance, **kwargs)
@@ -22,10 +22,10 @@ def draw_line(image, line, offset=(0, 0), color=(0, 0, 255), thickness=1):
     pt2 = round_vector(np.array(line.b) + offset)
     cv2.line(image, pt1, pt2, color, thickness=thickness)
 
-
 def draw_circle(image, circle, offset=(0, 0), color=(0, 0, 255), thickness=1):
     center = round_vector(np.array(circle.center) + offset)
-    cv2.circle(image, center, circle.radius, color, thickness=thickness)
+    radius = int(round(circle.radius))  # Add this line to convert to integer
+    cv2.circle(image, center, radius, color, thickness=thickness)
 
 
 def draw_point(image, point, offset=(0, 0), color=(255, 0, 0), thickness=2, radius=2):

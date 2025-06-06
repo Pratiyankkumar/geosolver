@@ -38,7 +38,7 @@ Initialize instantiators based on type_defs
 """
 instantiators = {}
 instantiators['polygon'] = polygon
-for key, value in instantiator_defs.iteritems():
+for key, value in instantiator_defs.items():
     args, _ = zip(*value)
     nt = namedtuple(key, ' '.join(args))
     instantiators[key] = nt

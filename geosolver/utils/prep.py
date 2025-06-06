@@ -71,6 +71,7 @@ def open_image(filepath, grayscale=True):
         fp = Image.open(filepath)
         fp.save(newpath)
         filepath = newpath
+        print(filepath)
     if grayscale:
         image = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
     else:
@@ -118,7 +119,7 @@ def index_by_list(data, indices):
 def stanford_tokenizer(paragraph, server_url=None):
     if server_url is None:
         server_url = settings.STANFORD_TOKENIZER_URL
-    print paragraph
+    print(paragraph)
     params = {"paragraph": paragraph}
     r = requests.get(server_url, params=params)
     print(r.url)

@@ -72,7 +72,7 @@ def annotated_unit_test(query):
 
     try:
         result = _annotated_unit_test(query)
-    except Exception, e:
+    except Exception as e:
         logging.error(query)
         logging.exception(e)
         result = SimpleResult(query, True, False, False)
@@ -115,11 +115,11 @@ def _annotated_unit_test(query):
     for reduced_formula in reduced_formulas:
         score = evaluate(reduced_formula, core_parse.variable_assignment)
         scores = [evaluate(child, core_parse.variable_assignment) for child in reduced_formula.children]
-        print reduced_formula, score, scores
+        print(reduced_formula, score, scores)
     # core_parse.display_points()
 
     ans = solve(reduced_formulas, choice_formulas, assignment=core_parse.variable_assignment)
-    print "ans:", ans
+    print("ans:", ans)
 
     if choice_formulas is None:
         attempted = True
@@ -157,7 +157,7 @@ def full_unit_test(combined_model, question, label_data):
 
     try:
         result = _full_unit_test(combined_model, question, label_data)
-    except Exception, e:
+    except Exception as e:
         logging.error(question.key)
         logging.exception(e)
         result = SimpleResult(question.key, True, False, False)
@@ -302,7 +302,7 @@ def _full_unit_test(combined_model, question, label_data):
         cc_trees = set(t for t in semantic_forest.get_semantic_trees_by_type('cc')
                        if opt_model.combined_model.get_tree_score(t) > 0.01)
         for cc_tree in cc_trees:
-            print "cc tree:", cc_tree, opt_model.combined_model.get_tree_score(cc_tree)
+            print("cc tree:", cc_tree, opt_model.combined_model.get_tree_score(cc_tree))
 
         bool_semantic_trees = opt_model.optimize(truth_semantic_trees.union(is_semantic_trees), 0, cc_trees)
         # semantic_trees = bool_semantic_trees.union(cc_trees)
@@ -327,12 +327,12 @@ def _full_unit_test(combined_model, question, label_data):
                 pass
             index = (i for i, word in sentence_words.iteritems() if word == key).next()
             tree = formula_to_semantic_tree(f, syntax_parse, (index, index+1))
-            print "f and t:", f, tree
+            print("f and t:", f, tree)
             text_parse_list.append({'simple': f.simple_repr(), 'tree': tree.serialized(), 'sentence_number': number, 'score': 1.0})
             optimized_list.append({'simple': f.simple_repr(), 'tree': tree.serialized(), 'sentence_number': number, 'score': 1.0})
 
             local_entities = formula_to_serialized_entities(match_parse, f, tree, number)
-            print "local entities:", local_entities
+            print("local entities:", local_entities)
             entity_list.extend(local_entities)
 
 
@@ -342,9 +342,9 @@ def _full_unit_test(combined_model, question, label_data):
         augmented_formulas = augment_formulas(core_formulas)
         completed_formulas = complete_formulas(augmented_formulas, cc_formulas)
 
-        print "completed formulas:"
-        for f in completed_formulas: print f
-        print ""
+        print("completed formulas:")
+        for f in completed_formulas: print(f)
+        print("")
 
         grounded_formulas = ground_formulas(match_parse, completed_formulas+truth_expr_formulas, value_expr_formulas)
         text_formulas = filter_formulas(flatten_formulas(grounded_formulas))
@@ -359,7 +359,7 @@ def _full_unit_test(combined_model, question, label_data):
             score = None
             scores = None
         solution += repr(reduced_formula) + '\n'
-        print reduced_formula, score, scores
+        print(reduced_formula, score, scores)
     solution = solution.rstrip()
     # core_parse.display_points()
 
@@ -371,9 +371,9 @@ def _full_unit_test(combined_model, question, label_data):
 
     # return SimpleResult(question.key, False, False, True) # Early termination
 
-    print "Solving..."
+    print("Solving...")
     ans = solve(reduced_formulas, choice_formulas, assignment=None)#core_parse.variable_assignment)
-    print "ans:", ans
+    print("ans:", ans)
 
 
     if choice_formulas is None:
@@ -441,7 +441,7 @@ def annotated_test():
     ids2 = [1025, 1030, 1031, 1032, 1035, 1037, 1038, 1039, 1040, 1042, 1043, 1045, 1047, 1050, 1051, 1052, 1054, 1056, 1058,] # 1027
     ids3 = [1063, 1065, 1067, 1076, 1089, 1095, 1096, 1097, 1099, 1102, 1105, 1106, 1107, 1108, 1110, 1111, 1119, 1120, 1121] # 1103
     ids4 = [1122, 1123, 1124, 1127, 1141, 1142, 1143, 1145, 1146, 1147, 1149, 1150, 1151, 1152, 1070, 1083, 1090, 1092, 1144, 1148]
-    ids6 = [997, 1046, 1053]
+    ids5 = [997, 1046, 1053]
     ids = ids1 + ids2 + ids3 + ids4 + ids5
     #ids = [973]
     correct = 0
@@ -450,14 +450,14 @@ def annotated_test():
     error = 0
     start = time.time()
     for idx, id_ in enumerate(ids):
-        print "-"*80
-        print "%d/%d complete" % (idx+1, len(ids))
+        print("-"*80)
+        print("%d/%d complete" % (idx+1, len(ids)))
         id_ = str(id_)
-        print "-"*80
-        print "id: %s" % id_
+        print("-"*80)
+        print("id: %s" % id_)
         result = annotated_unit_test(id_)
-        print result.message
-        print result
+        print(result.message)
+        print(result)
         if result.error:
             error += 1
         if result.attempted:
@@ -465,11 +465,11 @@ def annotated_test():
         if result.correct:
             correct += 1
     end = time.time()
-    print "-"*80
-    print "duration:\t%.1f" % (end - start)
+    print("-"*80)
+    print("duration:\t%.1f" % (end - start))
 
     out = "total:\t\t%d\nattempted:\t%d\ncorrect:\t%d\nerror:\t\t%d" % (total, attempted, correct, error)
-    print out
+    print(out)
 
 def full_test():
     start = time.time()
@@ -517,30 +517,30 @@ def full_test():
     else:
         cm = pickle.load(open('cm.p', 'rb'))
 
-    print "test ids: %s" % ", ".join(str(k) for k in te_s.keys())
+    print("test ids: %s" % ", ".join(str(k) for k in te_s.keys()))
     for idx, id_ in enumerate(te_keys):
         question = all_questions[id_]
         label = all_labels[id_]
         id_ = str(id_)
-        print "-"*80
-        print "id: %s" % id_
+        print("-"*80)
+        print("id: %s" % id_)
         result = full_unit_test(cm, question, label)
-        print result.message
-        print result
+        print(result.message)
+        print(result)
         if result.error:
             error += 1
         if result.penalized:
             penalized += 1
         if result.correct:
             correct += 1
-        print "-"*80
-        print "%d/%d complete, %d correct, %d penalized, %d error" % (idx+1, len(te_keys), correct, penalized, error)
+        print("-"*80)
+        print("%d/%d complete, %d correct, %d penalized, %d error" % (idx+1, len(te_keys), correct, penalized, error))
     end = time.time()
-    print "-"*80
-    print "duration:\t%.1f" % (end - start)
+    print("-"*80)
+    print("duration:\t%.1f" % (end - start))
 
     out = "total:\t\t%d\npenalized:\t%d\ncorrect:\t%d\nerror:\t\t%d" % (total, penalized, correct, error)
-    print out
+    print(out)
 
     dirs_path = os.path.join(demo_path, 'dirs.json')
     json.dump([str(x) for x in te_keys], open(dirs_path, 'wb'))
@@ -554,28 +554,28 @@ def data_stat(query):
     binary_rules = []
     semantic_trees = []
     for pk, local_syntax_parses in syntax_parses.iteritems():
-        print pk
+        print(pk)
         for number, syntax_parse in local_syntax_parses.iteritems():
             local_semantic_trees = [annotation_to_semantic_tree(syntax_parse, annotation)
                               for annotation in annotations[pk][number].values()]
             semantic_trees.extend(local_semantic_trees)
-            print local_semantic_trees
+            print(local_semantic_trees)
             for semantic_tree in local_semantic_trees:
                 unary_rules.extend(semantic_tree.get_unary_rules())
                 binary_rules.extend(semantic_tree.get_binary_rules())
 
     tag_model = train_tag_model(syntax_parses, annotations)
 
-    print "sentences: %d" % sum(len(question.sentence_words) for _, question in questions.iteritems())
-    print "words: %d" % (sum(len(words) for _, question in questions.iteritems() for _, words in question.sentence_words.iteritems()))
-    print "literals: %d" % len(semantic_trees)
-    print "unary rules: %d" % len(unary_rules)
-    print "binary rules: %d" % len(binary_rules)
+    print("sentences: %d" % sum(len(question.sentence_words) for _, question in questions.iteritems()))
+    print("words: %d" % (sum(len(words) for _, question in questions.iteritems() for _, words in question.sentence_words.iteritems())))
+    print("literals: %d" % len(semantic_trees))
+    print("unary rules: %d" % len(unary_rules))
+    print("binary rules: %d" % len(binary_rules))
 
-    print ""
-    print "LEXICON"
+    print("")
+    print("LEXICON")
     for key, s in tag_model.lexicon.iteritems():
-        print "%s: %s" % ("_".join(key), ", ".join(" ".join(ss) for ss in s))
+        print("%s: %s" % ("_".join(key), ", ".join(" ".join(ss) for ss in s)))
 
 
 
