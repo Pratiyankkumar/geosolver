@@ -18,7 +18,7 @@ __author__ = 'minjoon'
 
 def test_local_diagram_step_by_step():
     """Test with local diagram image - step by step to isolate the error"""
-    image_path = "geosolver/images/diagram.png"
+    image_path = "geosolver/images/dig2.png"
     print(f"Processing image: {image_path}")
     
     try:
@@ -63,7 +63,7 @@ def test_local_diagram_step_by_step():
 
 def test_just_image_segments():
     """Test just the image segmentation step"""
-    image_path = "geosolver/images/diagram.png"
+    image_path = "geosolver/images/dig2.png"
     print(f"Testing just image segments for: {image_path}")
     
     try:
@@ -83,7 +83,7 @@ def test_just_image_segments():
 
 def test_just_primitives():
     """Test just up to primitives parsing"""
-    image_path = "geosolver/images/diagram.png"
+    image_path = "geosolver/images/dig2.png"
     print(f"Testing primitives parsing for: {image_path}")
     
     try:
