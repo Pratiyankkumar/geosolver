@@ -6,3 +6,5 @@ temp/
 
 media
 media/*
+
+geometry_scene.py
