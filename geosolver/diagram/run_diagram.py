@@ -277,21 +277,21 @@ def create_geometry_from_geosolver():
     for point_id in manim_data['points'].keys():
         label = label_map.get(point_id, f"P{point_id}")
         manim_code += f"    points[{point_id}] = Dot(point_coords[{point_id}], color=YELLOW, radius=0.06)\n"
-        manim_code += f"    labels[{point_id}] = Text('{label}', font_size=20, color=WHITE).next_to(points[{point_id}], UP+RIGHT, buff=0.12)\n"
+        manim_code += f"    labels[{point_id}] = Text('{label}', font_size=20, color=BLACK).next_to(points[{point_id}], UP+RIGHT, buff=0.12)\n"
     
     manim_code += "\n    # Create lines\n"
     manim_code += "    lines = []\n"
     for i, line in enumerate(manim_data['lines']):
         start_id = line['start']
         end_id = line['end']
-        manim_code += f"    lines.append(Line(point_coords[{start_id}], point_coords[{end_id}], color=WHITE, stroke_width=2))\n"
+        manim_code += f"    lines.append(Line(point_coords[{start_id}], point_coords[{end_id}], color=BLACK, stroke_width=2))\n"
     
     manim_code += "\n    # Create circles\n"
     manim_code += "    circles = []\n"
     for i, circle in enumerate(manim_data['circles']):
         center_id = circle['center']
         radius = circle['radius']
-        manim_code += f"    circles.append(Circle(radius={radius:.6f}, color=WHITE, stroke_width=2).move_to(point_coords[{center_id}]))\n"
+        manim_code += f"    circles.append(Circle(radius={radius:.6f}, color=BLACK, stroke_width=2).move_to(point_coords[{center_id}]))\n"
     
     # Create the VGroup - EXACT TEMPLATE STRUCTURE
     manim_code += """
@@ -343,19 +343,19 @@ def get_geometry_components():
     for point_id in manim_data['points'].keys():
         label = label_map.get(point_id, f"P{point_id}")
         manim_code += f"    points[{point_id}] = Dot(point_coords[{point_id}], color=YELLOW, radius=0.06)\n"
-        manim_code += f"    labels[{point_id}] = Text('{label}', font_size=20, color=WHITE).next_to(points[{point_id}], UP+RIGHT, buff=0.12)\n"
+        manim_code += f"    labels[{point_id}] = Text('{label}', font_size=20, color=BLACK).next_to(points[{point_id}], UP+RIGHT, buff=0.12)\n"
     
     manim_code += "\n    lines = []\n"
     for i, line in enumerate(manim_data['lines']):
         start_id = line['start']
         end_id = line['end']
-        manim_code += f"    lines.append(Line(point_coords[{start_id}], point_coords[{end_id}], color=WHITE, stroke_width=2))\n"
+        manim_code += f"    lines.append(Line(point_coords[{start_id}], point_coords[{end_id}], color=BLACK, stroke_width=2))\n"
     
     manim_code += "\n    circles = []\n"
     for i, circle in enumerate(manim_data['circles']):
         center_id = circle['center']
         radius = circle['radius']
-        manim_code += f"    circles.append(Circle(radius={radius:.6f}, color=WHITE, stroke_width=2).move_to(point_coords[{center_id}]))\n"
+        manim_code += f"    circles.append(Circle(radius={radius:.6f}, color=BLACK, stroke_width=2).move_to(point_coords[{center_id}]))\n"
     
     manim_code += """
     return {
@@ -375,7 +375,7 @@ class GeometryScene(Scene):
     
     def construct(self):
         # Create title
-        title = Text("Geometry from GeoSolver", font_size=36, color=WHITE)
+        title = Text("Geometry from GeoSolver", font_size=36, color=BLACK)
         title.to_edge(UP, buff=0.5)
         
         # Get the complete geometry as a VGroup
