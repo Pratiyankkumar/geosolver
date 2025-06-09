@@ -420,7 +420,7 @@ def print_improved_manim_summary(manim_data):
 
 def test_local_diagram_step_by_step():
     """Test with local diagram image - step by step to isolate the error"""
-    image_path = "geosolver/images/geometry-3.png"
+    image_path = "geosolver/images/Circle-question-300x269.png"
     print(f"Processing image: {image_path}")
     
     try:
@@ -466,7 +466,7 @@ def test_local_diagram_step_by_step():
 
 def test_local_diagram_with_reusable_manim_export():
     """Complete test with reusable Manim export - MAIN FUNCTION"""
-    image_path = "geosolver/images/geometry-3.png"
+    image_path = "geosolver/images/Circle-question-300x269.png"
     print(f"Processing image: {image_path}")
     
     try:
@@ -543,7 +543,7 @@ def test_local_diagram_with_reusable_manim_export():
 
 def test_just_image_segments():
     """Test just the image segmentation step"""
-    image_path = "geosolver/images/geometry-3.png"
+    image_path = "geosolver/images/Circle-question-300x269.png"
     print(f"Testing just image segments for: {image_path}")
     
     try:
@@ -564,7 +564,7 @@ def test_just_image_segments():
 
 def test_just_primitives():
     """Test just up to primitives parsing"""
-    image_path = "geosolver/images/geometry-3.png"
+    image_path = "geosolver/images/Circle-question-300x269.png"
     print(f"Testing primitives parsing for: {image_path}")
     
     try:
@@ -589,7 +589,7 @@ if __name__ == "__main__":
     
     # Run the complete pipeline with reusable Manim export
     print("Running complete pipeline with reusable Manim export...")
-    test_local_diagram_with_reusable_manim_export()
+    # test_local_diagram_with_reusable_manim_export()
     
     # Uncomment these if you want to test individual steps
     # print("\n=== Testing just image segments ===")
@@ -599,4 +599,4 @@ if __name__ == "__main__":
     # test_just_primitives()
     
     # print("\n=== Testing step by step ===")
-    # test_local_diagram_step_by_step()
+    test_local_diagram_step_by_step()
