@@ -1,8 +1,8 @@
 import os
 import cv2
 import traceback
+import numpy as np
 
-from geosolver import geoserver_interface
 from geosolver.diagram.computational_geometry import normalize_angle, horizontal_angle, area_of_polygon
 from geosolver.diagram.get_instances import get_all_instances
 from geosolver.diagram.parse_confident_formulas import parse_confident_formulas, get_point_coordinates
@@ -12,84 +12,130 @@ from geosolver.diagram.parse_image_segments import parse_image_segments
 from geosolver.diagram.parse_primitives import parse_primitives
 from geosolver.diagram.select_primitives import select_primitives
 from geosolver.utils.prep import open_image
-import numpy as np
-from geosolver.diagram.parse_primitives import (
-    _get_circles_original, 
-    _get_circles_from_contours, 
-    _get_circles_from_templates
-)
-
-from geosolver.parameters import hough_circle_parameters as circle_params
 
 __author__ = 'minjoon'
 
-# ====== IMPROVED MANIM INTEGRATION FUNCTIONS ======
-
-def calculate_optimal_scaling_and_centering(points_data, canvas_width=14, canvas_height=8, margin=1.5):
+def generate_manim_from_image(image_path, output_filename="geometry_scene.py"):
     """
-    Calculate optimal scaling and centering to fit all points within Manim canvas
+    Generate Manim code from a geometry image
     
     Args:
-        points_data: Dictionary of {point_id: (x, y)} in pixel coordinates
-        canvas_width: Manim canvas width (default ~14 for 16:9 aspect ratio)
-        canvas_height: Manim canvas height (default ~8 for 16:9 aspect ratio)
-        margin: Margin to leave around the geometry
+        image_path: Path to the geometry image
+        output_filename: Name of the output Manim file
     
     Returns:
-        tuple: (scale_factor, center_offset_x, center_offset_y)
+        Dictionary with Manim data or None if failed
     """
-    if not points_data:
-        return 0.01, 0, 0
+    print(f"Generating Manim code from: {image_path}")
     
-    # Convert to numpy array for easier computation
-    coords = np.array(list(points_data.values()))
-    
-    # Find bounding box
-    min_x, min_y = np.min(coords, axis=0)
-    max_x, max_y = np.max(coords, axis=0)
-    
-    # Calculate dimensions
-    width = max_x - min_x
-    height = max_y - min_y
-    
-    # Avoid division by zero
-    if width == 0:
-        width = 1
-    if height == 0:
-        height = 1
-    
-    # Calculate scale factor to fit within canvas with margin
-    available_width = canvas_width - 2 * margin
-    available_height = canvas_height - 2 * margin
-    
-    scale_x = available_width / width
-    scale_y = available_height / height
-    
-    # Use the smaller scale to ensure everything fits
-    scale_factor = min(scale_x, scale_y)
-    
-    # Calculate center offset to center the geometry
-    geometry_center_x = (min_x + max_x) / 2
-    geometry_center_y = (min_y + max_y) / 2
-    
-    # Center offset in Manim coordinates
-    center_offset_x = -geometry_center_x * scale_factor
-    center_offset_y = geometry_center_y * scale_factor  # Flip Y axis
-    
-    return scale_factor, center_offset_x, center_offset_y
+    try:
+        # Complete GeoSolver pipeline
+        print("Step 1: Opening image...")
+        image = open_image(image_path)
+        
+        print("Step 2: Parsing image segments...")
+        image_segment_parse = parse_image_segments(image)
+        
+        print("Step 3: Enhanced primitive detection...")
+        primitive_parse = parse_primitives(image_segment_parse)
+        
+        print("Step 4: Selecting primitives...")
+        selected = select_primitives(primitive_parse)
+        
+        print("Step 5: Parsing core...")
+        core_parse = parse_core(selected)
+        
+        print("Step 6: Parsing graph...")
+        graph_parse = parse_graph(core_parse)
+        
+        print("Step 7: Getting confident formulas...")
+        confident_formulas = parse_confident_formulas(graph_parse)
+        
+        # Export to Manim format
+        print("\nExporting to Manim...")
+        manim_data = _export_to_manim_improved(graph_parse)
+        
+        # Save Manim file
+        _save_manim_file(manim_data, output_filename)
+        
+        print(f"\n✅ SUCCESS! Manim scene saved to: {output_filename}")
+        print(f"Run with: manim -pql {output_filename} GeometryScene")
+        
+        # Show summary
+        print(f"\nDetected geometry:")
+        print(f"  Points: {len(manim_data['points'])}")
+        print(f"  Lines: {len(manim_data['lines'])}")
+        print(f"  Circles: {len(manim_data['circles'])}")
+        
+        return manim_data
+        
+    except Exception as e:
+        print(f"Error generating Manim code: {e}")
+        traceback.print_exc()
+        return None
 
 
-def export_to_manim_improved(graph_parse):
+def show_detected_points(image_path):
     """
-    Improved function to convert graph_parse to Manim-ready data with optimal scaling
+    Show the detected points overlaid on the original image
     
     Args:
-        graph_parse: Your GraphParse object from the pipeline
-    
-    Returns:
-        Dictionary with all data needed for Manim scene
+        image_path: Path to the geometry image
     """
-    # First pass: Extract raw pixel coordinates
+    print(f"Detecting and displaying points from: {image_path}")
+    
+    try:
+        # Run GeoSolver pipeline up to point detection
+        print("Step 1: Opening image...")
+        image = open_image(image_path)
+        
+        print("Step 2: Parsing image segments...")
+        image_segment_parse = parse_image_segments(image)
+        
+        print("Step 3: Enhanced primitive detection...")
+        primitive_parse = parse_primitives(image_segment_parse)
+        
+        # Show detection results
+        print(f"\nPrimitive detection results:")
+        print(f"  Lines detected: {len(primitive_parse.lines)}")
+        print(f"  Circles detected: {len(primitive_parse.circles)}")
+        
+        # Show circle details
+        for idx, circle in primitive_parse.circles.items():
+            from geosolver.diagram.parse_primitives import get_circle_metadata
+            metadata = get_circle_metadata(circle)
+            arc_type = metadata.get('arc_type', 'full_circle')
+            detection_method = metadata.get('detection_method', 'unknown')
+            print(f"  Circle {idx}: center=({circle.center.x:.1f}, {circle.center.y:.1f}), "
+                  f"radius={circle.radius:.1f}, type={arc_type}, method={detection_method}")
+        
+        print("Step 4: Selecting primitives...")
+        selected = select_primitives(primitive_parse)
+        
+        print("Step 5: Parsing core...")
+        core_parse = parse_core(selected)
+        
+        print(f"\nFinal detected points: {len(core_parse.intersection_points)}")
+        for key, point in core_parse.intersection_points.items():
+            print(f"  Point {key}: ({point.x:.1f}, {point.y:.1f})")
+        
+        # Display the points on the image
+        print("\nDisplaying points on image...")
+        core_parse.display_points()
+        
+        return core_parse.intersection_points
+        
+    except Exception as e:
+        print(f"Error detecting points: {e}")
+        traceback.print_exc()
+        return None
+
+
+# ====== HELPER FUNCTIONS ======
+
+def _export_to_manim_improved(graph_parse):
+    """Convert graph_parse to Manim-ready data with optimal scaling"""
+    # Extract raw pixel coordinates
     raw_points = {}
     for point_key, point_var in graph_parse.core_parse.point_variables.items():
         coords = get_point_coordinates(graph_parse.core_parse, point_key)
@@ -103,14 +149,11 @@ def export_to_manim_improved(graph_parse):
             raw_points[point_key] = (x, y)
     
     # Calculate optimal scaling and centering
-    scale_factor, center_offset_x, center_offset_y = calculate_optimal_scaling_and_centering(raw_points)
+    scale_factor, center_offset_x, center_offset_y = _calculate_scaling(raw_points)
     
-    print(f"Optimal scaling: scale={scale_factor:.6f}, center_offset=({center_offset_x:.3f}, {center_offset_y:.3f})")
-    
-    # Second pass: Apply scaling and centering
+    # Apply scaling and centering
     points_data = {}
     for point_key, (x, y) in raw_points.items():
-        # Apply scaling and centering
         manim_x = x * scale_factor + center_offset_x
         manim_y = -y * scale_factor + center_offset_y  # Flip Y axis
         points_data[point_key] = (manim_x, manim_y)
@@ -164,23 +207,39 @@ def export_to_manim_improved(graph_parse):
         'circles': circles_data,
         'scale_info': {
             'scale_factor': scale_factor,
-            'center_offset': (center_offset_x, center_offset_y),
-            'raw_bounds': {
-                'min': (min(coord[0] for coord in raw_points.values()), min(coord[1] for coord in raw_points.values())),
-                'max': (max(coord[0] for coord in raw_points.values()), max(coord[1] for coord in raw_points.values()))
-            }
+            'center_offset': (center_offset_x, center_offset_y)
         }
     }
 
 
-def save_reusable_manim_file(manim_data, filename="geometry_scene.py"):
-    """
-    Save reusable Manim code that can be imported into other files
+def _calculate_scaling(points_data, canvas_width=14, canvas_height=8, margin=1.5):
+    """Calculate optimal scaling and centering for Manim canvas"""
+    if not points_data:
+        return 0.01, 0, 0
     
-    Args:
-        manim_data: Dictionary returned by export_to_manim_improved
-        filename: Name of the file to save
-    """
+    coords = np.array(list(points_data.values()))
+    min_x, min_y = np.min(coords, axis=0)
+    max_x, max_y = np.max(coords, axis=0)
+    
+    width = max_x - min_x if max_x != min_x else 1
+    height = max_y - min_y if max_y != min_y else 1
+    
+    available_width = canvas_width - 2 * margin
+    available_height = canvas_height - 2 * margin
+    
+    scale_factor = min(available_width / width, available_height / height)
+    
+    geometry_center_x = (min_x + max_x) / 2
+    geometry_center_y = (min_y + max_y) / 2
+    
+    center_offset_x = -geometry_center_x * scale_factor
+    center_offset_y = geometry_center_y * scale_factor
+    
+    return scale_factor, center_offset_x, center_offset_y
+
+
+def _save_manim_file(manim_data, filename):
+    """Save Manim code to file using the exact template provided"""
     label_map = {0: "D", 1: "C", 2: "B", 3: "O", 4: "A", 5: "E", 6: "F", 7: "G", 8: "H", 9: "I"}
     
     manim_code = """from manim import *
@@ -234,7 +293,7 @@ def create_geometry_from_geosolver():
         radius = circle['radius']
         manim_code += f"    circles.append(Circle(radius={radius:.6f}, color=WHITE, stroke_width=2).move_to(point_coords[{center_id}]))\n"
     
-    # Create the VGroup
+    # Create the VGroup - EXACT TEMPLATE STRUCTURE
     manim_code += """
     # Combine all objects into a VGroup for easy manipulation
     geometry_group = VGroup()
@@ -384,336 +443,21 @@ class MyCustomScene(Scene):
     print(f"Reusable Manim scene saved to: {filename}")
 
 
-def print_improved_manim_summary(manim_data):
-    """Print detailed summary of extracted Manim data with scaling info"""
-    print("\n" + "="*70)
-    print("REUSABLE MANIM EXPORT SUMMARY:")
-    print("="*70)
-    
-    scale_info = manim_data['scale_info']
-    print(f"Scaling factor: {scale_info['scale_factor']:.6f}")
-    print(f"Center offset: ({scale_info['center_offset'][0]:.3f}, {scale_info['center_offset'][1]:.3f})")
-    
-    raw_bounds = scale_info['raw_bounds']
-    print(f"Original bounds: ({raw_bounds['min'][0]:.1f}, {raw_bounds['min'][1]:.1f}) to ({raw_bounds['max'][0]:.1f}, {raw_bounds['max'][1]:.1f})")
-    
-    print(f"\nGeometry extracted:")
-    print(f"  Points: {len(manim_data['points'])}")
-    print(f"  Lines: {len(manim_data['lines'])}")
-    print(f"  Circles: {len(manim_data['circles'])}")
-    
-    print(f"\nFinal Manim coordinates (centered and scaled):")
-    label_map = {0: "D", 1: "C", 2: "B", 3: "O", 4: "A", 5: "E", 6: "F", 7: "G", 8: "H", 9: "I"}
-    
-    # Calculate bounds of final coordinates
-    final_coords = np.array(list(manim_data['points'].values()))
-    min_x, min_y = np.min(final_coords, axis=0)
-    max_x, max_y = np.max(final_coords, axis=0)
-    
-    print(f"Final bounds: ({min_x:.3f}, {min_y:.3f}) to ({max_x:.3f}, {max_y:.3f})")
-    print(f"Final size: {max_x - min_x:.3f} x {max_y - min_y:.3f}")
-    
-    print(f"\nPoint coordinates:")
-    for point_id, (x, y) in manim_data['points'].items():
-        label = label_map.get(point_id, f"P{point_id}")
-        print(f"  {label:>2} (point_{point_id}): ({x:>7.3f}, {y:>7.3f})")
-    
-    print(f"\nUsage examples:")
-    print(f"  Direct run: manim -pql geometry_scene.py GeometryScene")
-    print(f"  In other files: from geometry_scene import create_geometry_from_geosolver")
-
-
-# ====== ORIGINAL FUNCTIONS (UPDATED) ======
-
-def test_enhanced_circle_detection():
-    """Test enhanced circle detection on challenging images"""
-    test_images = [
-        "geosolver/images/dig3.png",  # Your original test
-        "path/to/semicircle_dig3.png",     # Add semicircle test
-        "path/to/thick_lines_dig3.png"     # Add thick lines test
-    ]
-    
-    for image_path in test_images:
-        print(f"\n{'='*50}")
-        print(f"Testing enhanced detection on: {image_path}")
-        print(f"{'='*50}")
-        
-        try:
-            # Standard pipeline
-            image = open_image(image_path)
-            image_segment_parse = parse_image_segments(image)
-            primitive_parse = parse_primitives(image_segment_parse)  # Now uses enhanced detection
-            
-            print(f"Enhanced detection found:")
-            print(f"  Lines: {len(primitive_parse.lines)}")
-            print(f"  Circles: {len(primitive_parse.circles)}")
-            
-            # Show circle types if detected
-            for idx, circle in primitive_parse.circles.items():
-                circle_type = getattr(circle, '_arc_type', 'full_circle')
-                confidence = getattr(circle, '_confidence', 'N/A')
-                print(f"  Circle {idx}: type={circle_type}, confidence={confidence}")
-            
-            # Continue with rest of pipeline
-            selected = select_primitives(primitive_parse)
-            core_parse = parse_core(selected)
-            graph_parse = parse_graph(core_parse)
-            
-            # Enhanced coordinate display
-            print(f"\nFinal detected points: {len(core_parse.intersection_points)}")
-            for key, point in core_parse.intersection_points.items():
-                print(f"  Point {key}: ({point.x:.1f}, {point.y:.1f})")
-            
-            confident_formulas = parse_confident_formulas(graph_parse)
-            print(f"\nGeometric relationships: {len(confident_formulas)}")
-            
-            # Export to Manim
-            manim_data = export_to_manim_improved(graph_parse)
-            print_improved_manim_summary(manim_data)
-            
-        except Exception as e:
-            print(f"Error processing {image_path}: {e}")
-            traceback.print_exc()
-
-def test_semicircle_specific():
-    """Specific test for semicircle detection"""
-    image_path = "geosolver/images/dig3.png"
-    
-    try:
-        print("=== SEMICIRCLE DETECTION TEST ===")
-        
-        image = open_image(image_path)
-        image_segment_parse = parse_image_segments(image)
-        
-        # Test just the enhanced primitive detection
-        diagram_segment = image_segment_parse.diagram_image_segment
-        
-        print("Testing enhanced circle detection methods...")
-        
-        # Test each method individually
-        from geosolver.diagram.parse_primitives import (
-            _get_circles_original, 
-            _get_circles_from_contours, 
-            _get_circles_from_templates
-        )
-        
-        original_circles = _get_circles_original(diagram_segment, circle_params)
-        contour_circles = _get_circles_from_contours(diagram_segment)
-        template_circles = _get_circles_from_templates(diagram_segment)
-        
-        print(f"Original Hough: {len(original_circles)} circles")
-        print(f"Contour method: {len(contour_circles)} circles")
-        print(f"Template method: {len(template_circles)} circles")
-        
-        # Analyze detected circles
-        all_circles = original_circles + contour_circles + template_circles
-        for i, circle in enumerate(all_circles):
-            circle_type = getattr(circle, '_arc_type', 'full_circle')
-            print(f"Circle {i}: center=({circle.center.x:.1f}, {circle.center.y:.1f}), "
-                  f"radius={circle.radius:.1f}, type={circle_type}")
-        
-    except Exception as e:
-        print(f"Semicircle test failed: {e}")
-        traceback.print_exc()
-
-# MODIFY the main test function
-def test_local_diagram_with_enhanced_detection():
-    """Complete test with enhanced circle detection"""
-    image_path = "geosolver/images/dig3.png"
-    print(f"Processing with enhanced detection: {image_path}")
-    
-    try:
-        print("Step 1: Opening image...")
-        image = open_image(image_path)
-        
-        print("Step 2: Parsing image segments...")
-        image_segment_parse = parse_image_segments(image)
-        
-        print("Step 3: Enhanced primitive detection...")
-        primitive_parse = parse_primitives(image_segment_parse)  # Now enhanced
-        
-        # Show what was detected
-        print(f"Enhanced detection results:")
-        print(f"  Lines detected: {len(primitive_parse.lines)}")
-        print(f"  Circles detected: {len(primitive_parse.circles)}")
-        
-        for idx, circle in primitive_parse.circles.items():
-            # Get metadata from the global metadata store
-            from geosolver.diagram.parse_primitives import get_circle_metadata
-            metadata = get_circle_metadata(circle)
-            
-            arc_type = metadata.get('arc_type', 'full_circle')
-            confidence = metadata.get('confidence', None)
-            detection_method = metadata.get('detection_method', 'unknown')
-            
-            print(f"  Circle {idx}:")
-            print(f"    Center: ({circle.center.x:.1f}, {circle.center.y:.1f})")
-            print(f"    Radius: {circle.radius:.1f}")
-            print(f"    Type: {arc_type}")
-            if confidence:
-                print(f"    Confidence: {confidence:.3f}")
-            print(f"    Detected by: {detection_method}")
-        
-        print("Step 4: Selecting primitives...")
-        selected = select_primitives(primitive_parse)
-        
-        print("Step 5: Parsing core...")
-        core_parse = parse_core(selected)
-        
-        print("Step 6: Parsing graph...")
-        graph_parse = parse_graph(core_parse)
-        
-        print("Step 7: Getting confident formulas...")
-        confident_formulas = parse_confident_formulas(graph_parse)
-        
-        print("✅ Enhanced detection completed successfully!")
-        
-        # Export results
-        manim_data = export_to_manim_improved(graph_parse)
-        save_reusable_manim_file(manim_data, "enhanced_geometry_scene.py")
-        
-        print(f"\nDetected geometric relationships:")
-        for formula in confident_formulas:
-            print(f"  {formula}")
-            
-        return manim_data
-        
-    except Exception as e:
-        print(f"Enhanced detection failed: {e}")
-        traceback.print_exc()
-        return None
-
-
-
-def test_local_diagram_with_reusable_manim_export():
-    """Complete test with reusable Manim export - MAIN FUNCTION"""
-    image_path = "geosolver/images/Circle-question-300x269.png"
-    print(f"Processing image: {image_path}")
-    
-    try:
-        print("Step 1: Opening image...")
-        image = open_image(image_path)
-        print(f"Image shape: {image.shape}")
-        
-        print("Step 2: Parsing image segments...")
-        image_segment_parse = parse_image_segments(image)
-        print("Image segments parsed successfully")
-        
-        print("Step 3: Parsing primitives...")
-        primitive_parse = parse_primitives(image_segment_parse)
-        print("Primitives parsed successfully")
-        
-        print("Step 4: Selecting primitives...")
-        selected = select_primitives(primitive_parse)
-        print("Primitives selected successfully")
-        
-        print("Step 5: Parsing core...")
-        core_parse = parse_core(selected)
-        print("Core parsed successfully")
-        
-        print("Step 6: Parsing graph...")
-        graph_parse = parse_graph(core_parse)
-        print("Graph parsed successfully")
-        
-        print("Step 7: Getting confident formulas...")
-        confident_formulas = parse_confident_formulas(graph_parse)
-        print("GeoSolver analysis completed successfully!")
-        
-        # ====== REUSABLE MANIM EXPORT ======
-        print("\n" + "="*70)
-        print("STARTING REUSABLE MANIM EXPORT...")
-        print("="*70)
-        
-        # Export to Manim format with improved scaling
-        manim_data = export_to_manim_improved(graph_parse)
-        
-        # Print detailed summary
-        print_improved_manim_summary(manim_data)
-        
-        # Save reusable Manim file
-        output_filename = "geometry_scene.py"
-        save_reusable_manim_file(manim_data, output_filename)
-        
-        print(f"\n✅ SUCCESS! Reusable Manim scene saved to: {output_filename}")
-        print("\n" + "="*70)
-        print("USAGE OPTIONS:")
-        print("="*70)
-        print("1. Direct run: manim -pql geometry_scene.py GeometryScene")
-        print("2. Import in other files:")
-        print("   from geometry_scene import create_geometry_from_geosolver")
-        print("   geometry = create_geometry_from_geosolver()")
-        print("   self.add(geometry)")
-        print("3. Use components:")
-        print("   from geometry_scene import get_geometry_components")
-        print("   components = get_geometry_components()")
-        print("="*70)
-        
-        # Also show the confident formulas
-        print(f"\nGeometric relationships found:")
-        for formula in confident_formulas:
-            print(f"  {formula}")
-            
-        return manim_data
-            
-    except Exception as e:
-        print(f"Error: {e}")
-        print("Full traceback:")
-        traceback.print_exc()
-        return None
-
-
-def test_just_image_segments():
-    """Test just the image segmentation step"""
-    image_path = "geosolver/images/Circle-question-300x269.png"
-    print(f"Testing just image segments for: {image_path}")
-    
-    try:
-        image = open_image(image_path)
-        print(f"Image loaded successfully, shape: {image.shape}")
-        
-        image_segment_parse = parse_image_segments(image)
-        print("Image segments parsed successfully")
-        print(f"Number of label segments: {len(image_segment_parse.label_image_segments)}")
-        
-        # Try to display the segmented image
-        image_segment_parse.diagram_image_segment.display_binarized_segmented_image()
-        
-    except Exception as e:
-        print(f"Error in image segmentation: {e}")
-        traceback.print_exc()
-
-
-def test_just_primitives():
-    """Test just up to primitives parsing"""
-    image_path = "geosolver/images/Circle-question-300x269.png"
-    print(f"Testing primitives parsing for: {image_path}")
-    
-    try:
-        image = open_image(image_path)
-        image_segment_parse = parse_image_segments(image)
-        print("Image segments OK")
-        
-        primitive_parse = parse_primitives(image_segment_parse)
-        print("Primitives parsed successfully")
-        
-        primitive_parse.display_primitives()
-        
-    except Exception as e:
-        print(f"Error in primitives parsing: {e}")
-        traceback.print_exc()
-
+# ====== MAIN EXECUTION ======
 
 if __name__ == "__main__":
-    print("="*70)
-    print("ENHANCED GEOSOLVER WITH CIRCLE/ARC DETECTION")
-    print("="*70)
+    print("="*60)
+    print("GEOSOLVER MAIN FUNCTIONS")
+    print("="*60)
     
-    # Test enhanced detection
-    print("Running enhanced detection pipeline...")
-    # test_local_diagram_with_enhanced_detection()
-    test_semicircle_specific()
+    # Choose your function:
     
-    # Test specific circle detection methods
-    # print("\n" + "="*50)
-    # print("Testing individual detection methods...")
-    # test_enhanced_circle_detection()
+    # Option 1: Generate Manim code from image
+    generate_manim_from_image("geosolver/images/image.png", "geometry_scene.py")
+    
+    # Option 2: Show detected points on image
+    # show_detected_points("geosolver/images/image.png")
+    
+    print("\n" + "="*60)
+    print("DONE")
+    print("="*60)
