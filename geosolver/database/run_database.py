@@ -26,7 +26,7 @@ def save_questions(query):
     if not os.path.exists(base_path):
         os.mkdir(base_path)
     for index, (key, question) in enumerate(questions.iteritems()):
-        print key
+        print(key)
         folder_name = get_number_string(index, 3)
         json_path = os.path.join(base_path, folder_name + ".json")
         diagram_path = os.path.join(base_path, folder_name + ".png")

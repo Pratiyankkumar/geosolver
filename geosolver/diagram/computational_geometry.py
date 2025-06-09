@@ -251,3 +251,116 @@ def area_of_polygon(points):
     area = 0.5*abs(sum(points[index-1][0]*p[1]-p[0]*points[index-1][1] for index, p in enumerate(points)))
     return area
 
+
+def distance_between_partial_circle_and_point(circle, point):
+    """Distance calculation for partial circles (semicircles, arcs, etc.)"""
+    # For partial circles, we still use the full circle distance
+    # but validation will be different
+    return distance_between_circle_and_point(circle, point)
+
+def partial_circumference(circle):
+    """Calculate circumference for partial circles"""
+    if hasattr(circle, '_arc_type'):
+        full_circumference = circumference(circle)
+        
+        if circle._arc_type == 'semicircle':
+            return full_circumference * 0.5
+        elif circle._arc_type == 'quarter_circle':
+            return full_circumference * 0.25
+        elif circle._arc_type == 'arc':
+            # Default to 30% for general arcs, could be made more sophisticated
+            return full_circumference * 0.3
+    
+    return circumference(circle)  # Default to full circle
+
+def is_point_on_arc(point, circle, start_angle, end_angle, tolerance=0.1):
+    """Check if a point lies on a specific arc of a circle"""
+    # First check if point is on the circle
+    distance_to_circle = distance_between_circle_and_point(circle, point)
+    if distance_to_circle > tolerance:
+        return False
+    
+    # Calculate angle of the point
+    point_angle = cartesian_angle(circle.center, point)
+    
+    # Normalize angles to [0, 2π]
+    start_angle = normalize_angle(start_angle)
+    end_angle = normalize_angle(end_angle)
+    point_angle = normalize_angle(point_angle)
+    
+    # Check if point angle is within arc range
+    if start_angle <= end_angle:
+        return start_angle <= point_angle <= end_angle
+    else:  # Arc crosses 0 angle
+        return point_angle >= start_angle or point_angle <= end_angle
+
+def fit_circle_to_points_robust(points):
+    """Robust circle fitting using least squares method"""
+    if len(points) < 3:
+        return None, None
+    
+    # Convert points to numpy array
+    if hasattr(points[0], 'x'):
+        point_array = np.array([[p.x, p.y] for p in points])
+    else:
+        point_array = np.array(points)
+    
+    # Least squares circle fitting
+    # Set up the system: (x-a)² + (y-b)² = r²
+    # Expand: x² + y² - 2ax - 2by + (a² + b² - r²) = 0
+    # Linear in terms of [a, b, (a² + b² - r²)]
+    
+    x = point_array[:, 0]
+    y = point_array[:, 1]
+    
+    # Set up matrix equation
+    A = np.column_stack([2*x, 2*y, np.ones(len(points))])
+    b = x**2 + y**2
+    
+    try:
+        # Solve for [a, b, c] where c = a² + b² - r²
+        solution = np.linalg.lstsq(A, b, rcond=None)[0]
+        a, b, c = solution
+        
+        # Calculate radius
+        radius = np.sqrt(a**2 + b**2 - c)
+        
+        if radius > 0:
+            center = instantiators['point'](a, b)
+            return center, radius
+        else:
+            return None, None
+            
+    except np.linalg.LinAlgError:
+        return None, None
+
+def classify_arc_by_angle_span(start_angle, end_angle):
+    """Classify arc type based on angular span"""
+    # Calculate angular span
+    span = abs(end_angle - start_angle)
+    if span > np.pi:
+        span = 2*np.pi - span  # Take the smaller arc
+    
+    span_degrees = np.degrees(span)
+    
+    if 170 <= span_degrees <= 190:
+        return 'semicircle'
+    elif 80 <= span_degrees <= 100:
+        return 'quarter_circle'
+    elif span_degrees >= 30:
+        return 'arc'
+    else:
+        return 'small_arc'
+
+def arc_endpoints_from_circle_and_angles(circle, start_angle, end_angle):
+    """Calculate arc endpoints from circle and angles"""
+    start_x = circle.center.x + circle.radius * np.cos(start_angle)
+    start_y = circle.center.y + circle.radius * np.sin(start_angle)
+    
+    end_x = circle.center.x + circle.radius * np.cos(end_angle)
+    end_y = circle.center.y + circle.radius * np.sin(end_angle)
+    
+    start_point = instantiators['point'](start_x, start_y)
+    end_point = instantiators['point'](end_x, end_y)
+    
+    return start_point, end_point

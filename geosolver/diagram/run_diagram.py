@@ -13,6 +13,13 @@ from geosolver.diagram.parse_primitives import parse_primitives
 from geosolver.diagram.select_primitives import select_primitives
 from geosolver.utils.prep import open_image
 import numpy as np
+from geosolver.diagram.parse_primitives import (
+    _get_circles_original, 
+    _get_circles_from_contours, 
+    _get_circles_from_templates
+)
+
+from geosolver.parameters import hough_circle_parameters as circle_params
 
 __author__ = 'minjoon'
 
@@ -418,50 +425,164 @@ def print_improved_manim_summary(manim_data):
 
 # ====== ORIGINAL FUNCTIONS (UPDATED) ======
 
-def test_local_diagram_step_by_step():
-    """Test with local diagram image - step by step to isolate the error"""
-    image_path = "geosolver/images/Circle-question-300x269.png"
-    print(f"Processing image: {image_path}")
+def test_enhanced_circle_detection():
+    """Test enhanced circle detection on challenging images"""
+    test_images = [
+        "geosolver/images/dig3.png",  # Your original test
+        "path/to/semicircle_dig3.png",     # Add semicircle test
+        "path/to/thick_lines_dig3.png"     # Add thick lines test
+    ]
+    
+    for image_path in test_images:
+        print(f"\n{'='*50}")
+        print(f"Testing enhanced detection on: {image_path}")
+        print(f"{'='*50}")
+        
+        try:
+            # Standard pipeline
+            image = open_image(image_path)
+            image_segment_parse = parse_image_segments(image)
+            primitive_parse = parse_primitives(image_segment_parse)  # Now uses enhanced detection
+            
+            print(f"Enhanced detection found:")
+            print(f"  Lines: {len(primitive_parse.lines)}")
+            print(f"  Circles: {len(primitive_parse.circles)}")
+            
+            # Show circle types if detected
+            for idx, circle in primitive_parse.circles.items():
+                circle_type = getattr(circle, '_arc_type', 'full_circle')
+                confidence = getattr(circle, '_confidence', 'N/A')
+                print(f"  Circle {idx}: type={circle_type}, confidence={confidence}")
+            
+            # Continue with rest of pipeline
+            selected = select_primitives(primitive_parse)
+            core_parse = parse_core(selected)
+            graph_parse = parse_graph(core_parse)
+            
+            # Enhanced coordinate display
+            print(f"\nFinal detected points: {len(core_parse.intersection_points)}")
+            for key, point in core_parse.intersection_points.items():
+                print(f"  Point {key}: ({point.x:.1f}, {point.y:.1f})")
+            
+            confident_formulas = parse_confident_formulas(graph_parse)
+            print(f"\nGeometric relationships: {len(confident_formulas)}")
+            
+            # Export to Manim
+            manim_data = export_to_manim_improved(graph_parse)
+            print_improved_manim_summary(manim_data)
+            
+        except Exception as e:
+            print(f"Error processing {image_path}: {e}")
+            traceback.print_exc()
+
+def test_semicircle_specific():
+    """Specific test for semicircle detection"""
+    image_path = "geosolver/images/dig3.png"
+    
+    try:
+        print("=== SEMICIRCLE DETECTION TEST ===")
+        
+        image = open_image(image_path)
+        image_segment_parse = parse_image_segments(image)
+        
+        # Test just the enhanced primitive detection
+        diagram_segment = image_segment_parse.diagram_image_segment
+        
+        print("Testing enhanced circle detection methods...")
+        
+        # Test each method individually
+        from geosolver.diagram.parse_primitives import (
+            _get_circles_original, 
+            _get_circles_from_contours, 
+            _get_circles_from_templates
+        )
+        
+        original_circles = _get_circles_original(diagram_segment, circle_params)
+        contour_circles = _get_circles_from_contours(diagram_segment)
+        template_circles = _get_circles_from_templates(diagram_segment)
+        
+        print(f"Original Hough: {len(original_circles)} circles")
+        print(f"Contour method: {len(contour_circles)} circles")
+        print(f"Template method: {len(template_circles)} circles")
+        
+        # Analyze detected circles
+        all_circles = original_circles + contour_circles + template_circles
+        for i, circle in enumerate(all_circles):
+            circle_type = getattr(circle, '_arc_type', 'full_circle')
+            print(f"Circle {i}: center=({circle.center.x:.1f}, {circle.center.y:.1f}), "
+                  f"radius={circle.radius:.1f}, type={circle_type}")
+        
+    except Exception as e:
+        print(f"Semicircle test failed: {e}")
+        traceback.print_exc()
+
+# MODIFY the main test function
+def test_local_diagram_with_enhanced_detection():
+    """Complete test with enhanced circle detection"""
+    image_path = "geosolver/images/dig3.png"
+    print(f"Processing with enhanced detection: {image_path}")
     
     try:
         print("Step 1: Opening image...")
         image = open_image(image_path)
-        print(f"Image shape: {image.shape}")
         
         print("Step 2: Parsing image segments...")
         image_segment_parse = parse_image_segments(image)
-        print("Image segments parsed successfully")
         
-        print("Step 3: Parsing primitives...")
-        primitive_parse = parse_primitives(image_segment_parse)
-        print("Primitives parsed successfully")
+        print("Step 3: Enhanced primitive detection...")
+        primitive_parse = parse_primitives(image_segment_parse)  # Now enhanced
+        
+        # Show what was detected
+        print(f"Enhanced detection results:")
+        print(f"  Lines detected: {len(primitive_parse.lines)}")
+        print(f"  Circles detected: {len(primitive_parse.circles)}")
+        
+        for idx, circle in primitive_parse.circles.items():
+            # Get metadata from the global metadata store
+            from geosolver.diagram.parse_primitives import get_circle_metadata
+            metadata = get_circle_metadata(circle)
+            
+            arc_type = metadata.get('arc_type', 'full_circle')
+            confidence = metadata.get('confidence', None)
+            detection_method = metadata.get('detection_method', 'unknown')
+            
+            print(f"  Circle {idx}:")
+            print(f"    Center: ({circle.center.x:.1f}, {circle.center.y:.1f})")
+            print(f"    Radius: {circle.radius:.1f}")
+            print(f"    Type: {arc_type}")
+            if confidence:
+                print(f"    Confidence: {confidence:.3f}")
+            print(f"    Detected by: {detection_method}")
         
         print("Step 4: Selecting primitives...")
         selected = select_primitives(primitive_parse)
-        print("Primitives selected successfully")
         
         print("Step 5: Parsing core...")
         core_parse = parse_core(selected)
-        print("Core parsed successfully")
         
-        print("Step 6: Displaying points...")
-        core_parse.display_points()
-        print("Points displayed successfully")
-        
-        print("Step 7: Parsing graph...")
+        print("Step 6: Parsing graph...")
         graph_parse = parse_graph(core_parse)
-        print("Graph parsed successfully")
         
-        print("Step 8: Getting confident formulas...")
+        print("Step 7: Getting confident formulas...")
         confident_formulas = parse_confident_formulas(graph_parse)
-        print("Confident information in the diagram:")
-        for variable_node in confident_formulas:
-            print(variable_node)
+        
+        print("✅ Enhanced detection completed successfully!")
+        
+        # Export results
+        manim_data = export_to_manim_improved(graph_parse)
+        save_reusable_manim_file(manim_data, "enhanced_geometry_scene.py")
+        
+        print(f"\nDetected geometric relationships:")
+        for formula in confident_formulas:
+            print(f"  {formula}")
             
+        return manim_data
+        
     except Exception as e:
-        print(f"Error at step: {e}")
-        print("Full traceback:")
+        print(f"Enhanced detection failed: {e}")
         traceback.print_exc()
+        return None
+
 
 
 def test_local_diagram_with_reusable_manim_export():
@@ -584,19 +705,15 @@ def test_just_primitives():
 
 if __name__ == "__main__":
     print("="*70)
-    print("REUSABLE GEOSOLVER TO MANIM PIPELINE")
+    print("ENHANCED GEOSOLVER WITH CIRCLE/ARC DETECTION")
     print("="*70)
     
-    # Run the complete pipeline with reusable Manim export
-    print("Running complete pipeline with reusable Manim export...")
-    # test_local_diagram_with_reusable_manim_export()
+    # Test enhanced detection
+    print("Running enhanced detection pipeline...")
+    # test_local_diagram_with_enhanced_detection()
+    test_semicircle_specific()
     
-    # Uncomment these if you want to test individual steps
-    # print("\n=== Testing just image segments ===")
-    # test_just_image_segments()
-    
-    # print("\n=== Testing up to primitives ===")
-    # test_just_primitives()
-    
-    # print("\n=== Testing step by step ===")
-    test_local_diagram_step_by_step()
+    # Test specific circle detection methods
+    # print("\n" + "="*50)
+    # print("Testing individual detection methods...")
+    # test_enhanced_circle_detection()
