@@ -453,7 +453,7 @@ if __name__ == "__main__":
     # Choose your function:
     
     # Option 1: Generate Manim code from image
-    generate_manim_from_image("geosolver/images/image.png", "geometry_scene.py")
+    generate_manim_from_image("geosolver/images/image23.png", "geometry_scene.py")
     
     # Option 2: Show detected points on image
     # show_detected_points("geosolver/images/image.png")
