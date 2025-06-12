@@ -1,5 +1,4 @@
-import os
-import cv2
+import sys
 import traceback
 import numpy as np
 
@@ -450,13 +449,42 @@ if __name__ == "__main__":
     print("GEOSOLVER MAIN FUNCTIONS")
     print("="*60)
     
-    # Choose your function:
+    # Default image path
+    default_image = "geosolver/images/image.png"
     
-    # Option 1: Generate Manim code from image
-    generate_manim_from_image("geosolver/images/image23.png", "geometry_scene.py")
-    
-    # Option 2: Show detected points on image
-    # show_detected_points("geosolver/images/image.png")
+    # Check command line arguments
+    if len(sys.argv) > 1:
+        command = sys.argv[1].lower()
+        
+        # Check if custom image path is provided
+        image_path = sys.argv[2] if len(sys.argv) > 2 else default_image
+        
+        if command == "manim":
+            # Option 1: Generate Manim code from image
+            print(f"Running Manim generation with image: {image_path}")
+            generate_manim_from_image(image_path, "geometry_scene.py")
+            
+        elif command == "display":
+            # Option 2: Show detected points on image
+            print(f"Running point detection and display with image: {image_path}")
+            show_detected_points(image_path)
+            
+        else:
+            print(f"Unknown command: {command}")
+            print("Usage:")
+            print("  python -m geosolver.diagram.run_diagram manim [image_path]    # Generate Manim code")
+            print("  python -m geosolver.diagram.run_diagram display [image_path]  # Show detected points")
+            print("  If no image_path is provided, uses default: geosolver/images/image.png")
+            sys.exit(1)
+    else:
+        # Default behavior (no arguments) - run display
+        print("No command specified, running point detection and display...")
+        print("Usage:")
+        print("  python -m geosolver.diagram.run_diagram manim [image_path]    # Generate Manim code")
+        print("  python -m geosolver.diagram.run_diagram display [image_path]  # Show detected points")
+        print("  If no image_path is provided, uses default: geosolver/images/image.png")
+        print(f"\nRunning default (display) with image: {default_image}...")
+        show_detected_points(default_image)
     
     print("\n" + "="*60)
     print("DONE")
