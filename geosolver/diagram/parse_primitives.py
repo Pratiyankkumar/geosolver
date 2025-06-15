@@ -236,21 +236,36 @@ def _analyze_contour_for_circle(contour):
         return None
 
 def _get_circles_from_templates(image_segment):
-    """Detect circles using template matching for standard shapes"""
+    """Detect circles using template matching for standard shapes with size validation"""
     circles = []
     image = image_segment.segmented_image
+    
+    # Check if image is large enough for template matching
+    image_height, image_width = image.shape[:2]
+    min_size = 30  # Minimum image size for template matching
+    
+    if image_width < min_size or image_height < min_size:
+        print(f"Image too small ({image_width}x{image_height}) for template matching, skipping...")
+        return circles
     
     # Create templates for different circle types
     templates = _create_circle_templates()
     
     for template_name, template in templates.items():
+        # Check if template fits in image
+        template_height, template_width = template.shape[:2]
+        
+        if template_width > image_width or template_height > image_height:
+            print(f"Template {template_name} ({template_width}x{template_height}) too large for image ({image_width}x{image_height}), skipping...")
+            continue
+        
         matches = _match_template_multi_scale(image, template)
         
         for match in matches:
             x, y, scale, confidence = match
             radius = template.shape[0] // 2 * scale
             
-            if confidence > 0.6 and 15 < radius < 200:  # Confidence and size thresholds
+            if confidence > 0.6 and 15 < radius < min(image_width, image_height) // 3:  # Adaptive size limits
                 circle = instantiators['circle'](
                     instantiators['point'](x + radius, y + radius), 
                     radius
@@ -265,13 +280,16 @@ def _get_circles_from_templates(image_segment):
     
     return circles
 
+
 def _create_circle_templates():
-    """Create templates for different circle types"""
+    """Create templates for different circle types with adaptive sizing"""
     templates = {}
     
-    # Full circle template
-    radius = 30
+    # Use smaller base radius for better compatibility with small images
+    radius = 20  # Reduced from 30
     size = radius * 2 + 4
+    
+    # Full circle template
     full_circle = np.zeros((size, size), dtype=np.uint8)
     cv2.circle(full_circle, (size//2, size//2), radius, 255, 2)
     templates['full_circle'] = full_circle
@@ -288,31 +306,45 @@ def _create_circle_templates():
     return templates
 
 def _match_template_multi_scale(image, template, scales=None):
-    """Match template at multiple scales"""
+    """Match template at multiple scales with size validation"""
     if scales is None:
         scales = np.arange(0.5, 2.0, 0.2)
     
     matches = []
+    
+    # Get image dimensions
+    image_height, image_width = image.shape[:2]
     
     for scale in scales:
         # Scale template
         new_width = int(template.shape[1] * scale)
         new_height = int(template.shape[0] * scale)
         
+        # Skip if scaled template is too small
         if new_width < 10 or new_height < 10:
+            continue
+        
+        # CRITICAL FIX: Skip if template is larger than image
+        if new_width > image_width or new_height > image_height:
             continue
             
         scaled_template = cv2.resize(template, (new_width, new_height))
         
         # Template matching
-        result = cv2.matchTemplate(image, scaled_template, cv2.TM_CCOEFF_NORMED)
-        
-        # Find good matches
-        locations = np.where(result >= 0.5)
-        
-        for pt in zip(*locations[::-1]):
-            confidence = result[pt[1], pt[0]]
-            matches.append((pt[0], pt[1], scale, confidence))
+        try:
+            result = cv2.matchTemplate(image, scaled_template, cv2.TM_CCOEFF_NORMED)
+            
+            # Find good matches
+            locations = np.where(result >= 0.5)
+            
+            for pt in zip(*locations[::-1]):
+                confidence = result[pt[1], pt[0]]
+                matches.append((pt[0], pt[1], scale, confidence))
+                
+        except cv2.error as e:
+            # Skip this scale if template matching fails
+            print(f"Warning: Template matching failed at scale {scale}: {e}")
+            continue
     
     return matches
 
